@@ -32,7 +32,7 @@
 #define TX_RING_SIZE 512
 
 static const struct rte_eth_conf port_conf_default = {
-    .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
+    .rxmode = { .max_rx_pkt_len = RTE_ETHER_MAX_LEN }
 };
 
 typedef struct _dpdk_instance
@@ -128,7 +128,7 @@ static int start_instance(Dpdk_Context_t *dpdkc, DpdkInstance *instance)
     return DAQ_SUCCESS;
 }
 
-static void destroy_instance(DpdkInstance *instance)
+static void dpdk_destroy_instance(DpdkInstance *instance)
 {
     int i;
 
@@ -244,7 +244,7 @@ static int parse_args(char *inputstring, char **argv)
     return ap - argv;
 }
 
-static int dpdk_daq_initialize(const DAQ_Config_t *config, void **ctxt_ptr, char *errbuf, size_t errlen)
+static int dpdk_daq_initialize(const DAQ_ModuleConfig_h *config, void **ctxt_ptr, char *errbuf, size_t errlen)
 {
     Dpdk_Context_t *dpdkc;
     DpdkInstance *instance;
@@ -307,7 +307,7 @@ static int dpdk_daq_initialize(const DAQ_Config_t *config, void **ctxt_ptr, char
         goto err;
     }
 
-    ports = rte_eth_dev_count();
+    ports = rte_eth_dev_count_total();
     if (ports == 0)
     {
         snprintf(errbuf, errlen, "%s: No Ethernet ports!\n", __FUNCTION__);
@@ -458,6 +458,22 @@ static const DAQ_Verdict verdict_translation_table[MAX_DAQ_VERDICT] = {
     DAQ_VERDICT_PASS,       /* DAQ_VERDICT_IGNORE */
     DAQ_VERDICT_BLOCK       /* DAQ_VERDICT_RETRY */
 };
+
+static int dpdk_daq_module_load(const DAQ_BaseAPI_t *base_api)
+{
+    if (base_api->api_version != DAQ_BASE_API_VERSION || base_api->api_size != sizeof(DAQ_BaseAPI_t))
+        return DAQ_ERROR;
+
+    daq_base_api = *base_api;
+
+    return DAQ_SUCCESS;
+}
+
+static int dpdk_daq_module_unload(void)
+{
+    memset(&daq_base_api, 0, sizeof(daq_base_api));
+    return DAQ_SUCCESS;
+}
 
 static int dpdk_daq_acquire(void *handle, int cnt, DAQ_Analysis_Func_t callback, DAQ_Meta_Func_t metaback, void *user)
 {
@@ -733,7 +749,7 @@ static int dpdk_daq_get_snaplen(void *handle)
 static uint32_t dpdk_daq_get_capabilities(void *handle)
 {
     return DAQ_CAPA_BLOCK | DAQ_CAPA_REPLACE | DAQ_CAPA_INJECT |
-        DAQ_CAPA_UNPRIV_START | DAQ_CAPA_BREAKLOOP | DAQ_CAPA_BPF |
+        DAQ_CAPA_UNPRIV_START | DAQ_CAPA_BPF |
         DAQ_CAPA_DEVICE_INDEX;
 }
 
@@ -784,10 +800,15 @@ const DAQ_Module_t dpdk_daq_module_data =
 #endif
 {
     /* .api_version = */ DAQ_API_VERSION,
+    /* .api_size = */ sizeof(DAQ_ModuleAPI_t),
     /* .module_version = */ DAQ_DPDK_VERSION,
     /* .name = */ "dpdk",
     /* .type = */ DAQ_TYPE_INLINE_CAPABLE | DAQ_TYPE_INTF_CAPABLE | DAQ_TYPE_MULTI_INSTANCE,
-    /* .initialize = */ dpdk_daq_initialize,
+    /* .load = */ dpdk_daq_module_load,
+    /* .unload = */ dpdk_daq_module_unload,
+    /* .get_variable_descs = */ NULL,
+    /* .instantiate = */ dpdk_daq_initialize,
+    /* .destroy = */ dpdk_destroy_instance,
     /* .set_filter = */ dpdk_daq_set_filter,
     /* .start = */ dpdk_daq_start,
     /* .acquire = */ dpdk_daq_acquire,
@@ -804,9 +825,6 @@ const DAQ_Module_t dpdk_daq_module_data =
     /* .get_errbuf = */ dpdk_daq_get_errbuf,
     /* .set_errbuf = */ dpdk_daq_set_errbuf,
     /* .get_device_index = */ dpdk_daq_get_device_index,
-    /* .modify_flow = */ NULL,
-    /* .hup_prep = */ NULL,
-    /* .hup_apply = */ NULL,
-    /* .hup_post = */ NULL,
-    /* .dp_add_dc = */ NULL
+ 
+ 
 };
