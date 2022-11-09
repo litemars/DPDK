@@ -634,6 +634,10 @@ do_send_packet:
 
     return 0;
 }
+static int dpdk_inject_packet(Dpdk_Context_t *dpdkc, DpdkInstance *instance, const uint8_t *data, uint32_t data_len)
+{
+
+}
 
 static int dpdk_daq_inject(void *handle, const DAQ_PktHdr_t *hdr, const uint8_t *packet_data, uint32_t len, int reverse)
 {

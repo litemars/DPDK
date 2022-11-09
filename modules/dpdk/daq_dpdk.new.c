@@ -233,7 +233,141 @@ static int dpdk_daq_set_filter(void *handle, const char *filter)
 
     return DAQ_SUCCESS;
 }
+static int start_instance(Dpdk_Context_t *dpdkc, DpdkInstance *instance)
+{
+    int rx_rings = RX_RING_NUM, tx_rings = TX_RING_NUM;
+    struct rte_eth_conf port_conf = port_conf_default;
+    int port, queue, ret;
 
+    port = instance->port;
+
+    ret = rte_eth_dev_configure(port, rx_rings, tx_rings, &port_conf);
+    if (ret != 0)
+    {
+        DPE(dpdkc->errbuf, "%s: Cannot configure port %d\n", __FUNCTION__, port);
+        return DAQ_ERROR;
+    }
+
+    instance->rx_rings = rx_rings;
+    instance->tx_rings = tx_rings;
+
+    for (queue = 0; queue < rx_rings; queue++)
+    {
+        ret = rte_eth_rx_queue_setup(port, queue, RX_RING_SIZE,
+                rte_eth_dev_socket_id(port),
+                NULL, instance->mbuf_pool);
+        if (ret != 0)
+        {
+            DPE(dpdkc->errbuf, "%s: Cannot setup rx queue %d for port %d\n", __FUNCTION__, queue, port);
+            return DAQ_ERROR;
+        }
+    }
+
+    for (queue = 0; queue < tx_rings; queue++)
+    {
+        ret = rte_eth_tx_queue_setup(port, queue, TX_RING_SIZE,
+                rte_eth_dev_socket_id(port),
+                NULL);
+        if (ret != 0)
+        {
+            DPE(dpdkc->errbuf, "%s: Cannot setup tx queue %d for port %d\n", __FUNCTION__, queue, port);
+            return DAQ_ERROR;
+        }
+    }
+
+    ret = rte_eth_dev_start(instance->port);
+    if (ret != 0)
+    {
+        DPE(dpdkc->errbuf, "%s: Cannot start device for port %d\n", __FUNCTION__, port);
+        return DAQ_ERROR;
+    }
+
+    instance->flags |= DPDKINST_STARTED;
+
+    if (dpdkc->promisc_flag)
+        rte_eth_promiscuous_enable(instance->port);
+
+    return DAQ_SUCCESS;
+}
+
+static int dpdk_daq_inject_relative(void *handle, const DAQ_Msg_t *msg, const uint8_t *data, uint32_t data_len, int reverse)
+{
+    Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
+    // need to check the following 2 lines
+    DPDKPktDesc *desc = (DPDKPktDesc *) msg->priv;
+    DPDKInstance *instance = reverse ? desc->instance : desc->instance->peer;
+
+    if (!reverse && !(instance = instance->peer))
+    {
+        SET_ERROR(dpdkc->errbuf, "%s: Specified ingress interface (%u) has no peer for forward injection.",
+                __FUNCTION__, pkthdr->ingress_index);
+        return DAQ_ERROR_NODEV;
+    }
+    return dpdk_inject_packet(dpdkc, instance, data, data_len);
+
+}
+
+static int dpdk_inject_packet(Dpdk_Context_t *dpdkc, DpdkInstance *instance, const uint8_t *data, uint32_t data_len)
+{
+    m = rte_pktmbuf_alloc(instance->mbuf_pool);
+    if (!m)
+    {
+        SET_ERROR(dpdkc->errbuf, "%s: Cannot allocate memory for packet.",
+                __FUNCTION__);
+        return DAQ_ERROR_NOMEM;
+    }
+    rte_memcpy(rte_pktmbuf_mtod(m, void *), data, data_len);
+
+    const uint16_t nb_tx = rte_eth_tx_burst(instance->port, 0, &m, 1);
+
+    if (unlikely(nb_tx == 0))
+    {
+        SET_ERROR(dpdkc->errbuf, "%s: Cannot send packet. Try again.", __FUNCTION__);
+        rte_pktmbuf_free(m);
+        return DAQ_ERROR_AGAIN;
+    }
+
+    return ;
+}
+static int dpdk_daq_inject(void *handle, DAQ_MsgType type, const void *hdr, const uint8_t *data, uint32_t data_len){
+    Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
+    
+    const DAQ_PktHdr_t *pkthdr = (const DAQ_PktHdr_t *) hdr;
+    DpdkInstance *instance;
+    struct rte_mbuf *m;
+
+    for (instance = dpdkc->instances; instance; instance = instance->next)
+    {
+        if (instance->index == pkthdr->ingress_index)
+            break;
+    }
+    if (!instance)
+    {
+        SET_ERROR(dpdkc->errbuf, "%s: Unrecognized ingress interface specified: %u",
+                __FUNCTION__, pkthdr->ingress_index);
+        return DAQ_ERROR_NODEV;
+    }
+
+    return dpdk_inject_packet(dpdkc, instance, data, data_len);
+}
+
+static int dpdk_daq_start(void *handle)
+{
+    Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
+    DpdkInstance *instance;
+
+    for (instance = dpdkc->instances; instance; instance = instance->next)
+    {
+        if (start_instance(dpdkc, instance) != DAQ_SUCCESS)
+            return DAQ_ERROR;
+    }
+
+    dpdk_daq_reset_stats(handle);
+
+    //need to delete the following line
+    dpdkc->state = DAQ_STATE_STARTED;
+    return DAQ_SUCCESS;
+}
 #ifdef BUILDING_SO
 DAQ_SO_PUBLIC const DAQ_ModuleAPI_t DAQ_MODULE_DATA =
 #else
@@ -251,8 +385,8 @@ const DAQ_ModuleAPI_t afpacket_daq_module_data =
     /* .instantiate = */ dpdk_daq_instantiate,
     /* .destroy = */ dpdk_daq_destroy,
     /* .set_filter = */ dpdk_daq_set_filter,
-    /* .start = */ ,
-    /* .inject = */ ,
+    /* .start = */ dpdk_daq_start ,
+    /* .inject = */ dpdk_daq_inject ,
     /* .inject_relative = */ ,
     /* .interrupt = */ ,
     /* .stop = */ ,
