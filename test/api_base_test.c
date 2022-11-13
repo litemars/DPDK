@@ -99,6 +99,17 @@ static struct verdict_xlate {
     { DAQ_VERDICT_IGNORE, "ignore" },
 };
 
+static void test_first(void **state){
+    DAQ_Module_h res;
+    assert_int_equal(0,0);
+    //res=daq_find_module("Test");
+    //res=daq_modules_first();
+    res=daq_modules_next();
+    //assert_non_null(res);
+    assert_null(res);
+    assert_int_equal(0,0);
+}
+
 static void test_string_translation(void **state)
 {
     int i;
@@ -330,6 +341,7 @@ int main(void)
         cmocka_unit_test(test_string_translation),
         cmocka_unit_test(test_non_existent_dynamic_path),
         cmocka_unit_test(test_daq_load_modules),
+        cmocka_unit_test(test_first),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
