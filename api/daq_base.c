@@ -107,9 +107,11 @@ DAQ_LINKAGE const DAQ_ModuleAPI_t *daq_find_module(const char *name)
 
     if (!name)
         return NULL;
-
+    // module_list list of node with all the modules
+    printf("[10]");
     for (node = module_list; node; node = node->next)
     {
+        printf("\ndaq_find\n module name found %s\n",node->module->name);
         if (!strcmp(name, node->module->name))
             return node->module;
     }
@@ -146,6 +148,7 @@ static int register_module(const DAQ_ModuleAPI_t *dm, void *dl_handle, const cha
         return DAQ_ERROR;
     }
 
+    printf("dm name %s", dm->name);
     /* Do we already have a module with the same name loaded? */
     for (node = module_list; node; node = node->next)
     {
@@ -222,7 +225,7 @@ static int daq_load_dynamic_module(const char *filename)
         dlclose(dl_handle);
         return DAQ_ERROR;
     }
-
+    printf("\ndm in load dynamic module %s\n", dm->name);
     if ((rval = register_module(dm, dl_handle, filename)) != DAQ_SUCCESS)
     {
         if (rval != DAQ_ERROR_EXISTS)
@@ -241,6 +244,7 @@ DAQ_LINKAGE int daq_load_static_modules(const DAQ_ModuleAPI_t **modules)
 
     for (dmptr = modules; dmptr && (dm = *dmptr) != NULL; dmptr++)
     {
+        printf("\nstatic\n");
         if (register_module(dm, NULL, "[static]") != DAQ_SUCCESS)
             fprintf(stderr, "%s (%d): Failed to register static DAQ module.\n", dm->name, i);
         i++;
@@ -311,6 +315,7 @@ DAQ_LINKAGE void daq_unload_modules(void)
 
 DAQ_LINKAGE const DAQ_ModuleAPI_t *daq_modules_first(void)
 {
+    printf("[5]");
     if (module_list)
         module_list_iter = module_list;
 

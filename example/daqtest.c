@@ -128,6 +128,9 @@ typedef struct _DAQTestPacket
 #ifdef BUILD_AFPACKET_MODULE
 extern const DAQ_ModuleAPI_t afpacket_daq_module_data;
 #endif
+#ifdef BUILD_DPDK_MODULE
+extern const DAQ_ModuleAPI_t dpdk_daq_module_data;
+#endif
 #ifdef BUILD_BPF_MODULE
 extern const DAQ_ModuleAPI_t bpf_daq_module_data;
 #endif
@@ -170,6 +173,7 @@ static DAQ_Module_h static_modules[] =
 #ifdef BUILD_DIVERT_MODULE
     &divert_daq_module_data,
 #endif
+    &dpdk_daq_module_data,
 #ifdef BUILD_DUMP_MODULE
     &dump_daq_module_data,
 #endif
@@ -1583,7 +1587,8 @@ static int create_daq_config(DAQTestConfig *cfg, DAQ_Config_h *daqcfg_ptr)
         daq_config_set_total_instances(daqcfg, cfg->thread_count);
 
     for (dtmc = cfg->module_configs; dtmc; dtmc = dtmc->next)
-    {
+    {   
+
         DAQ_Module_h module = daq_find_module(dtmc->module_name);
         if (!module)
         {
@@ -1662,6 +1667,7 @@ int main(int argc, char *argv[])
 
     daq_set_verbosity(cfg.verbosity);
 #ifdef USE_STATIC_MODULES
+    printf("here to load staic modules");
     daq_load_static_modules(static_modules);
 #endif
     daq_load_dynamic_modules(cfg.module_paths);

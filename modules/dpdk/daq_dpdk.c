@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#include <daq_api.h> this gives an error, check it out
 #include <sfbpf.h>
 #include <sfbpf_dlt.h>
 
@@ -342,7 +341,7 @@ static int start_instance(Dpdk_Context_t *dpdkc, DpdkInstance *instance)
 
     return DAQ_SUCCESS;
 }
-
+*/
 static void dpdk_daq_destroy(void*  handle)
 {
     Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
@@ -350,7 +349,7 @@ static void dpdk_daq_destroy(void*  handle)
     if (dpdkc->device)
         free(dpdkc->device);
     free(dpdkc);
-} */
+} 
 /* static int dpdk_daq_inject(void *handle, DAQ_MsgType type, const void *hdr, const uint8_t *data, uint32_t data_len){
     Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
     
@@ -393,7 +392,7 @@ static int dpdk_daq_start(void *handle)
 #ifdef BUILDING_SO
 DAQ_SO_PUBLIC const DAQ_ModuleAPI_t DAQ_MODULE_DATA =
 #else
-const DAQ_ModuleAPI_t afpacket_daq_module_data =
+const DAQ_ModuleAPI_t dpdk_daq_module_data =
 #endif
 {
     /* .api_version = */ DAQ_MODULE_API_VERSION,
@@ -405,7 +404,7 @@ const DAQ_ModuleAPI_t afpacket_daq_module_data =
     /* .unload = */ dpdk_daq_module_unload,
     /* .get_variable_descs = */ NULL,
     /* .instantiate = */ dpdk_daq_instantiate,
-    /* .destroy = */ NULL,
+    /* .destroy = */ dpdk_daq_destroy,
     /* .set_filter = */ NULL,
     /* .start = */ NULL ,
     /* .inject = */ NULL ,
