@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <daq_api.h>
+//#include <daq_api.h> this gives an error, check it out
 #include <sfbpf.h>
 #include <sfbpf_dlt.h>
 
@@ -88,10 +88,24 @@ static int dpdk_daq_module_unload(void)
 
 static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInstance_h modinst, void **ctxt_ptr){
     
+    printf("\nDEBUG - dpdk_daq_instantiate\n");
+
+    //printf(modcfg->mode);
+
+    //printf(modcfg->module->name);
+
+    //printf(modinst->module->name);
+
+    printf("\n END DEBUG - dpdk_daq_instantiate\n");
+    /*
     Dpdk_Context_t *dpdkc;
     DpdkInstance *instance;
-
-    // to check 
+    int ret, ports, rval = DAQ_ERROR;;
+    size_t len;
+    char *dev;
+    char argv0[] = "random";
+    char *argv[MAX_ARGS + 1];
+    /* to check 
     DAQ_Dict *entry;
     char intf[IFNAMSIZ];
     int num_intfs = 0;
@@ -100,23 +114,22 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     char *dev;
     int ret, rval = DAQ_ERROR;
     char *dpdk_args = NULL;
-    char argv0[] = "fake";
-    char *argv[MAX_ARGS + 1];
+
     int argc;
-    //
+    
 
     dpdkc = calloc(1, sizeof(Dpdk_Context_t));
 
     if (!dpdkc)
     {
-        snprintf(errbuf, strlen, "%s: Couldn't allocate memory for the new DPDK context!", __FUNCTION__);
+        //snprintf(errbuf, strlen, "%s: Couldn't allocate memory for the new DPDK context!", __FUNCTION__);
         rval = DAQ_ERROR_NOMEM;
         goto err;
     }
     dpdkc->device = strdup(daq_base_api.config_get_input(modcfg));
     if (!dpdkc->device)
     {
-        snprintf(errbuf, errlen, "%s: Couldn't allocate memory for the device string!", __FUNCTION__);
+        //snprintf(errbuf, errlen, "%s: Couldn't allocate memory for the device string!", __FUNCTION__);
         rval = DAQ_ERROR_NOMEM;
         goto err;
     }
@@ -124,15 +137,18 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     dpdkc->timeout = (int) daq_base_api.config_get_timeout(modcfg);
     dpdkc->promisc_flag = true; // you should always set the interface //TODO
 
-    /* Import the DPDK arguments */
+    /* Import the DPDK arguments 
+    
     for (entry = modcfg->values; entry; entry = entry->next)
     {
         if (!strcmp(entry->key, "dpdk_args"))
             dpdk_args = entry->value;
     }
+
+
     if (!dpdk_args)
     {
-        snprintf(errbuf, errlen, "%s: Missing EAL arguments!", __FUNCTION__);
+        //snprintf(errbuf, errlen, "%s: Missing EAL arguments!", __FUNCTION__);
         rval = DAQ_ERROR_INVAL;
         goto err;
     }
@@ -143,15 +159,14 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     ret = rte_eal_init(argc, argv);
     if (ret < 0)
     {
-        snprintf(errbuf, errlen, "%s: Invalid EAL arguments!\n",
-                __FUNCTION__);
+        //snprintf(errbuf, errlen, "%s: Invalid EAL arguments!\n",__FUNCTION__);
         rval = DAQ_ERROR_INVAL;
         goto err;
     }
     ports = rte_eth_dev_count_total();
     if (ports == 0)
     {
-        snprintf(errbuf, errlen, "%s: No Ethernet ports!\n", __FUNCTION__);
+        //snprintf(errbuf, errlen, "%s: No Ethernet ports!\n", __FUNCTION__);
         rval = DAQ_ERROR_NODEV;
         goto err;
     }
@@ -160,14 +175,14 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     if (*dev == ':' || ((len = strlen(dev)) > 0 && *(dev + len - 1) == ':') ||
             (daq_base_api.config_get_mode(modcfg) == DAQ_MODE_PASSIVE && strstr(dev, "::")))
     {
-        SET_ERROR(modinst, "%s: Invalid interface specification: '%s'!", __func__, afpc->device);
+        //SET_ERROR(modinst, "%s: Invalid interface specification: '%s'!", __func__, dpdkc->device);
         goto err;
     }
 
-    /* If there are any leftover unbridged interfaces and we're not in Passive mode, error out. */
-    if (!dpdkc->instances || (daq_base_api.config_get_mode(modcfg) != DAQ_MODE_PASSIVE && num_intfs != 0))
+    /* If there are any leftover unbridged interfaces and we're not in Passive mode, error out. 
+    if (!dpdkc->instances || (daq_base_api.config_get_mode(modcfg) != DAQ_MODE_PASSIVE))
     {
-        SET_ERROR(modinst, "%s: Invalid interface specification: '%s'!", __func__, dpdkc->device);
+        //SET_ERROR(modinst, "%s: Invalid interface specification: '%s'!", __func__, dpdkc->device);
         goto err;
     }    
     // Maybe we need to create the rings here
@@ -184,6 +199,7 @@ err:
         free(dpdkc);
     }
     return rval;
+    */
 }
 
 static void dpdk_destroy_instance(DpdkInstance *instance)
@@ -202,7 +218,7 @@ static void dpdk_destroy_instance(DpdkInstance *instance)
         free(instance);
     }
 }
-static int dpdk_daq_set_filter(void *handle, const char *filter)
+/* static int dpdk_daq_set_filter(void *handle, const char *filter)
 {
     Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
     struct sfbpf_program fcode;
@@ -217,19 +233,20 @@ static int dpdk_daq_set_filter(void *handle, const char *filter)
         return DAQ_ERROR;
     }
 
-    /* not sure what it does
+    //not sure what it does
     if (sfbpf_compile(dpdkc->snaplen, DLT_EN10MB, &fcode, dpdkc->filter, 1, 0) < 0)
     {
         SET_ERROR(dpdkc->errbuf, "%s: BPF state machine compilation failed!", __FUNCTION__);
         return DAQ_ERROR;
-    }*/
+    }
 
     sfbpf_freecode(&dpdkc->fcode);
     dpdkc->fcode.bf_len = fcode.bf_len;
     dpdkc->fcode.bf_insns = fcode.bf_insns;
 
     return DAQ_SUCCESS;
-}
+} */
+
 static int start_instance(Dpdk_Context_t *dpdkc, DpdkInstance *instance)
 {
     int rx_rings = RX_RING_NUM, tx_rings = TX_RING_NUM;
@@ -287,7 +304,7 @@ static int start_instance(Dpdk_Context_t *dpdkc, DpdkInstance *instance)
     return DAQ_SUCCESS;
 }
 
-static int dpdk_daq_inject_relative(void *handle, const DAQ_Msg_t *msg, const uint8_t *data, uint32_t data_len, int reverse)
+/* static int dpdk_daq_inject_relative(void *handle, const DAQ_Msg_t *msg, const uint8_t *data, uint32_t data_len, int reverse)
 {
     Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
     // need to check the following 2 lines
@@ -300,9 +317,9 @@ static int dpdk_daq_inject_relative(void *handle, const DAQ_Msg_t *msg, const ui
     }
     return dpdk_inject_packet(dpdkc, instance, data, data_len);
 
-}
+} */
 
-static int dpdk_inject_packet(Dpdk_Context_t *dpdkc, DpdkInstance *instance, const uint8_t *data, uint32_t data_len)
+/* static int dpdk_inject_packet(Dpdk_Context_t *dpdkc, DpdkInstance *instance, const uint8_t *data, uint32_t data_len)
 {
     struct rte_mbuf *m;
     m = rte_pktmbuf_alloc(instance->mbuf_pool);
@@ -333,8 +350,8 @@ static void dpdk_daq_destroy(void*  handle)
     if (dpdkc->device)
         free(dpdkc->device);
     free(dpdkc);
-}
-static int dpdk_daq_inject(void *handle, DAQ_MsgType type, const void *hdr, const uint8_t *data, uint32_t data_len){
+} */
+/* static int dpdk_daq_inject(void *handle, DAQ_MsgType type, const void *hdr, const uint8_t *data, uint32_t data_len){
     Dpdk_Context_t *dpdkc = (Dpdk_Context_t *) handle;
     
     const DAQ_PktHdr_t *pkthdr = (const DAQ_PktHdr_t *) hdr;
@@ -354,7 +371,7 @@ static int dpdk_daq_inject(void *handle, DAQ_MsgType type, const void *hdr, cons
     }
 
     return dpdk_inject_packet(dpdkc, instance, data, data_len);
-}
+} */
 
 static int dpdk_daq_start(void *handle)
 {
@@ -388,10 +405,10 @@ const DAQ_ModuleAPI_t afpacket_daq_module_data =
     /* .unload = */ dpdk_daq_module_unload,
     /* .get_variable_descs = */ NULL,
     /* .instantiate = */ dpdk_daq_instantiate,
-    /* .destroy = */ dpdk_daq_destroy,
-    /* .set_filter = */ dpdk_daq_set_filter,
-    /* .start = */ dpdk_daq_start ,
-    /* .inject = */ dpdk_daq_inject ,
+    /* .destroy = */ NULL,
+    /* .set_filter = */ NULL,
+    /* .start = */ NULL ,
+    /* .inject = */ NULL ,
     /* .inject_relative = */ NULL ,
     /* .interrupt = */ NULL,
     /* .stop = */ NULL ,

@@ -99,16 +99,6 @@ static struct verdict_xlate {
     { DAQ_VERDICT_IGNORE, "ignore" },
 };
 
-static void test_first(void **state){
-    DAQ_Module_h res;
-    assert_int_equal(0,0);
-    //res=daq_find_module("Test");
-    //res=daq_modules_first();
-    res=daq_modules_next();
-    //assert_non_null(res);
-    assert_null(res);
-    assert_int_equal(0,0);
-}
 
 static void test_string_translation(void **state)
 {
@@ -332,6 +322,20 @@ static void test_daq_load_modules(void **state)
     assert_non_null(module);
 
     daq_unload_modules();
+}
+
+static void test_first(void **state){
+    //DAQ_Module_h res;
+    
+    assert_int_equal(0,0);
+    DAQ_Module_h res = daq_find_module(TEST1_MODULE_NAME);
+    assert_non_null(res); 
+    //res=daq_find_module("Afpacket");
+    //res=daq_modules_first();
+    //res=daq_modules_next();
+    assert_non_null(res);
+    //assert_null(res);
+    assert_int_equal(0,0);
 }
 
 int main(void)
