@@ -24,6 +24,10 @@ if BUILD_DIVERT_MODULE
 daqtest_static_CFLAGS += -DBUILD_DIVERT_MODULE
 daqtest_static_LDADD += ${top_builddir}/modules/divert/libdaq_static_divert.la
 endif
+if BUILD_DPDK_MODULE
+daqtest_static_CFLAGS += -DBUILD_DPDK_MODULE
+daqtest_static_LDADD += ${top_builddir}/modules/dpdk/libdaq_static_dpdk.la
+endif
 if BUILD_DUMP_MODULE
 daqtest_static_CFLAGS += -DBUILD_DUMP_MODULE
 daqtest_static_LDADD += ${top_builddir}/modules/dump/libdaq_static_dump.la $(DAQ_DUMP_LIBS)

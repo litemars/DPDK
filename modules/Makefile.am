@@ -61,12 +61,12 @@ if BUILD_SHARED_MODULES
     pkglib_LTLIBRARIES += dpdk/daq_dpdk.la
     pkgconfig_DATA += dpdk/libdaq_static_dpdk.pc
     dpdk_daq_dpdk_la_SOURCES = dpdk/daq_dpdk.c
-    dpdk_daq_dpdk_la_CPPFLAGS = $(AM_CPPFLAGS) -DBUILDING_SO
+    dpdk_daq_dpdk_la_CPPFLAGS = $(DPDK_CPPFLAGS) -DBUILDING_SO
     dpdk_daq_dpdk_la_LDFLAGS = -module -export-dynamic -avoid-version -shared
 endif
     lib_LTLIBRARIES += dpdk/libdaq_static_dpdk.la
     dpdk_libdaq_static_dpdk_la_SOURCES = dpdk/daq_dpdk.c
-    dpdk_libdaq_static_dpdk_la_CPPFLAGS = $(AM_CPPFLAGS)
+    dpdk_libdaq_static_dpdk_la_CPPFLAGS = $(DPDK_CPPFLAGS)
     dpdk_libdaq_static_dpdk_la_LDFLAGS = -static -avoid-version
 endif
 

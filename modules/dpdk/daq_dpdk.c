@@ -87,34 +87,36 @@ static int dpdk_daq_module_unload(void)
 
 static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInstance_h modinst, void **ctxt_ptr){
     
+    /* INFO
+
+    dpdkc->device = cx5if0
+    
+    
+    */
+    
     printf("\nDEBUG - dpdk_daq_instantiate\n");
 
-    //printf(modcfg->mode);
-
-    //printf(modcfg->module->name);
-
-    //printf(modinst->module->name);
-
-    printf("\n END DEBUG - dpdk_daq_instantiate\n");
-    /*
+    
+    
     Dpdk_Context_t *dpdkc;
     DpdkInstance *instance;
-    int ret, ports, rval = DAQ_ERROR;;
-    size_t len;
-    char *dev;
-    char argv0[] = "random";
-    char *argv[MAX_ARGS + 1];
-    /* to check 
-    DAQ_Dict *entry;
-    char intf[IFNAMSIZ];
-    int num_intfs = 0;
-    int port1, port2, ports;
-    size_t len;
-    char *dev;
-    int ret, rval = DAQ_ERROR;
-    char *dpdk_args = NULL;
+    int ret, ports, rval = DAQ_ERROR;
+    //DAQ_Dict *entry;
+    //size_t len;
+    //char *dev;
+    char argv[] = "command";
 
-    int argc;
+    //to check 
+    //
+    //char intf[IFNAMSIZ];
+    //int num_intfs = 0;
+    //int port1, port2, ports;
+    //size_t len;
+    //char *dev;
+    //int ret, rval = DAQ_ERROR;
+    //char *dpdk_args = NULL;
+
+    int argc=1;
     
 
     dpdkc = calloc(1, sizeof(Dpdk_Context_t));
@@ -123,28 +125,41 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     {
         //snprintf(errbuf, strlen, "%s: Couldn't allocate memory for the new DPDK context!", __FUNCTION__);
         rval = DAQ_ERROR_NOMEM;
-        goto err;
+        printf("error");
+        //goto err;
     }
     dpdkc->device = strdup(daq_base_api.config_get_input(modcfg));
     if (!dpdkc->device)
     {
         //snprintf(errbuf, errlen, "%s: Couldn't allocate memory for the device string!", __FUNCTION__);
         rval = DAQ_ERROR_NOMEM;
-        goto err;
+        printf("error");
+        //goto err;
     }
+    
+    //These values seems to be empty
     dpdkc->snaplen = daq_base_api.config_get_snaplen(modcfg);
     dpdkc->timeout = (int) daq_base_api.config_get_timeout(modcfg);
     dpdkc->promisc_flag = true; // you should always set the interface //TODO
-
-    /* Import the DPDK arguments 
     
+    //printf("\n",dpdkc->snaplen);
+    //printf("\n",dpdkc->timeout);
+
+    
+    
+    //Import the DPDK arguments 
+    const char *varKey, *varValue;
+    //daq_base_api.config_first_variable(modcfg,&varKey,&varValue);
+    daq_base_api.config_get_variable(modcfg,varKey);
+    printf(varKey);
+    /*
     for (entry = modcfg->values; entry; entry = entry->next)
     {
         if (!strcmp(entry->key, "dpdk_args"))
             dpdk_args = entry->value;
     }
 
-
+    
     if (!dpdk_args)
     {
         //snprintf(errbuf, errlen, "%s: Missing EAL arguments!", __FUNCTION__);
@@ -154,14 +169,18 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     argv[0] = argv0;
     argc = parse_args(dpdk_args, &argv[1]) + 1;
     optind = 1;
-
+    */
     ret = rte_eal_init(argc, argv);
     if (ret < 0)
     {
         //snprintf(errbuf, errlen, "%s: Invalid EAL arguments!\n",__FUNCTION__);
         rval = DAQ_ERROR_INVAL;
-        goto err;
+        printf("error");
+        //goto err;
     }
+    printf("\nEND DEBUG - dpdk_daq_instantiate\n");
+
+    /*
     ports = rte_eth_dev_count_total();
     if (ports == 0)
     {
@@ -189,6 +208,7 @@ static int dpdk_daq_instantiate(const DAQ_ModuleConfig_h modcfg, DAQ_ModuleInsta
     *ctxt_ptr = dpdkc;
 
     return DAQ_SUCCESS;
+    
 err:
     if (dpdkc)
     {
@@ -199,6 +219,7 @@ err:
     }
     return rval;
     */
+    
 }
 
 static void dpdk_destroy_instance(DpdkInstance *instance)

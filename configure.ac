@@ -89,11 +89,13 @@ if test "x$with_pcap_libraries" != "xno"; then
     PCAP_LDFLAGS="-L${with_pcap_libraries}"
 fi
 
+DPDK_LDFLAG="$(shell pkg-config --libs libdpdk)"
+
 # Check to see if libpcap is available to be used by modules
 save_CPPFLAGS="$CPPFLAGS"
 save_LDFLAGS="$LDFLAGS"
 CPPFLAGS="$PCAP_CPPFLAGS $CPPFLAGS"
-LDFLAGS="$PCAP_LDFLAGS $LDFLAGS"
+LDFLAGS="$PCAP_LDFLAGS $DPDK_LDFLAG $LDFLAGS"
 AC_CHECK_HEADER([pcap.h], [HAVE_PCAP_HEADERS=yes])
 AC_CHECK_LIB([pcap],[pcap_lib_version], [HAVE_PCAP_LIBRARY=yes])
 CPPFLAGS="$save_CPPFLAGS"
@@ -238,14 +240,24 @@ AM_COND_IF([BUILD_NETMAP_MODULE], [AC_CONFIG_FILES([modules/netmap/libdaq_static
 
 # DPDK module - modify by me
 
+echo "env RTE_SDK $RTE_SDK"
+
 AC_ARG_ENABLE(dpdk-module,
-              AC_HELP_STRING([--disable-dpdk-module],[don't build the bundled dpdk module]),
+              AC_HELP_STRING([--disable-dpdk-module],[do not build the bundled dpdk module]),
               [enable_dpdk_module="$enableval"], [enable_dpdk_module="$DEFAULT_ENABLE"])
 if test "$enable_dpdk_module" = yes; then
-    AC_CHECK_HEADER([rte_config.h], [], [enable_dpdk_module=no])
+    if test "x$RTE_SDK" == "x"; then
+        echo
+        echo "   ERROR!  RTE_SDK environment variable must be set to the DPDK root directory."
+        echo
+        exit
+    fi
+    AC_CHECK_HEADER([${RTE_SDK}/install/include/rte_config.h], [], [enable_dpdk_module=no])
     if test "$enable_dpdk_module" = yes; then
         STATIC_LIBS="${STATIC_LIBS} -lsfbpf ${DPDK_LDFLAGS} -ldpdk -lpthread"
-        CFLAGS="${CFLAGS} -std=gnu99 -Wno-pedantic"
+	STATIC_LIBS+="$(shell pkg-config --static --libs libdpdk)"
+	CFLAGS="$(shell pkg-config --cflags libdpdk)"
+        CFLAGS+="${CFLAGS} -std=gnu99 -Wno-pedantic"
     fi
 fi
 AM_CONDITIONAL([BUILD_DPDK_MODULE], [test "$enable_dpdk_module" = yes])
@@ -392,7 +404,7 @@ AC_MSG_RESULT([
     code_coverage_ldflags:  ${CODE_COVERAGE_LDFLAGS}
     Build AFPacket DAQ module.. : $enable_afpacket_module
     Build BPF DAQ module....... : $enable_bpf_module
-    Build DPDK DAQ module...... : $enable_dpdk_module"
+    Build DPDK DAQ module...... : $enable_dpdk_module
     Build Divert DAQ module.... : $enable_divert_module
     Build Dump DAQ module...... : $enable_dump_module
     Build FST DAQ module....... : $enable_fst_module
